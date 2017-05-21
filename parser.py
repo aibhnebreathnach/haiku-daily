@@ -4,36 +4,70 @@
 from HTMLParser import HTMLParser
 import urllib2
 
+# Set of 5 and 7 syllable phrases - no duplicates
+fives = set()
+sevens = set()
 
 class Parser(HTMLParser):
 
     def __init__(self):
         HTMLParser.__init__(self)
-        self.inLink = False
+
+        self.inElement = False
         self.lasttag = None
+
+        # List of haiku parsed from website
+        self.haiku = []
 
     def handle_starttag(self, tag, attrs):
         if tag == "div":
             for name, value in attrs:
                 if name == "class" and value == "line":
-                    self.inLink = True
+                    self.inElement = True
                     self.lasttag = tag
 
     def handle_endtag(self, tag):
         if tag == "div":
-            self.inLink = False
+            self.inElement = False
 
     def handle_data(self, data):
-        if self.lasttag == "div" and self.inLink and data.strip():
-            print data
+        if self.lasttag == "div" and self.inElement and data.strip():
+            self.haiku.append(data)
+
+    # Split haiku into 5s and 7s
+    def split_haiku(self):
+        fives.add(self.haiku[0])
+        sevens.add(self.haiku[1])
+        fives.add(self.haiku[2])
+        self.haiku[:] = [] # Clear haiku list
+
 
 # Get raw HTMl for parsing
 def get_raw_html(url):
     page = urllib2.urlopen(url)
     return page.read()
 
+# Write 5 and 7 syllable phrases to their files
+def write_fives(fives):
+    f = open("data/5s.txt", "a") # "a" for append
+    for i in set(fives):
+        string = i + "\n"
+        f.write(string)
+    f.close()
 
-text = get_raw_html("http://www.randomhaiku.com/")
+def write_sevens(sevens):
+    f = open("data/7s.txt", "a") # "a" for append
+    for i in set(sevens):
+        string = i + "\n"
+        f.write(string)
+    f.close()
+
 
 parser = Parser()
-parser.feed(text)
+for i in range(0,10):
+    html_raw = get_raw_html("http://www.randomhaiku.com/")
+    parser.feed(html_raw)
+    parser.split_haiku()
+
+write_fives(fives)
+write_sevens(sevens)
