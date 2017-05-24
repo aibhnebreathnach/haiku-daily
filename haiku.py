@@ -53,9 +53,5 @@ class Haiku():
         seven = self.get_phrase("seven", rand_seven)
         five_two = self.get_phrase("five", rand_five_two)
 
+        # Return formatted haiku
         return five_one + seven + five_two
-
-
-haiku = Haiku()
-print 'Your Daily haiku: '
-print '\n', haiku.build_haiku()
