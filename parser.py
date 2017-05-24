@@ -62,12 +62,23 @@ def write_sevens(sevens):
         f.write(string)
     f.close()
 
+# Remove duplicate lines from 5 and 7 files
+def remove_duplicates(filepath):
+    lines = open(filepath).readlines()
+    uniqlines = set(lines)
+    uniqout = open(filepath, 'w').writelines(set(uniqlines))
+
+
 
 parser = Parser()
-for i in range(0,10):
+for i in range(0,100):
     html_raw = get_raw_html("http://www.randomhaiku.com/")
+    print 'Roation: ', i
     parser.feed(html_raw)
     parser.split_haiku()
 
 write_fives(fives)
 write_sevens(sevens)
+
+remove_duplicates('data/7s.txt')
+remove_duplicates('data/5s.txt')
