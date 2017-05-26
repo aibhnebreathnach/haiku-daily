@@ -1,17 +1,15 @@
 # Utility class to parse the HTML from randomhaiku.com
 # and get sections of haiku for later use.
-
-from HTMLParser import HTMLParser
-import urllib2
+from lxml import html
+import requests, sys
 
 # Set of 5 and 7 syllable phrases - no duplicates
 fives = set()
 sevens = set()
 
-class Parser(HTMLParser):
+class Parser():
 
     def __init__(self):
-        HTMLParser.__init__(self)
 
         self.inElement = False
         self.lasttag = None
@@ -19,46 +17,38 @@ class Parser(HTMLParser):
         # List of haiku parsed from website
         self.haiku = []
 
-    def handle_starttag(self, tag, attrs):
-        if tag == "div":
-            for name, value in attrs:
-                if name == "class" and value == "line":
-                    self.inElement = True
-                    self.lasttag = tag
 
-    def handle_endtag(self, tag):
-        if tag == "div":
-            self.inElement = False
-
-    def handle_data(self, data):
-        if self.lasttag == "div" and self.inElement and data.strip():
-            self.haiku.append(data)
+    def parse_haiku(self, tree):
+        self.haiku = tree.xpath('//div[@class="line"]/text()')
 
     # Split haiku into 5s and 7s
     def split_haiku(self):
         fives.add(self.haiku[0])
         sevens.add(self.haiku[1])
         fives.add(self.haiku[2])
-        self.haiku[:] = [] # Clear haiku list
+
+        # Clear haiku list, to only need
+        # one parser object for many GETs
+        self.haiku[:] = []
 
 
-# Get raw HTMl for parsing
-def get_raw_html(url):
-    page = urllib2.urlopen(url)
-    return page.read()
+# Get tree of html tags for processing
+def get_html_tree(url):
+    page = requests.get(url)
+    return html.fromstring(page.content)
 
 # Write 5 and 7 syllable phrases to their files
 def write_fives(fives):
-    f = open("data/5s.txt", "a") # "a" for append
+    f = open('data/5s.txt', 'a') # 'a' for append
     for i in set(fives):
-        string = i + "\n"
+        string = i + '\n'
         f.write(string)
     f.close()
 
 def write_sevens(sevens):
-    f = open("data/7s.txt", "a") # "a" for append
+    f = open('data/7s.txt', 'a') # 'a' for append
     for i in set(sevens):
-        string = i + "\n"
+        string = i + '\n'
         f.write(string)
     f.close()
 
@@ -69,16 +59,17 @@ def remove_duplicates(filepath):
     uniqout = open(filepath, 'w').writelines(set(uniqlines))
 
 
-
+# Controller
 parser = Parser()
-for i in range(0,100):
-    html_raw = get_raw_html("http://www.randomhaiku.com/")
+count = int(sys.argv[1])
+for i in range(0, count):
+    html_tree = get_html_tree("http://www.randomhaiku.com/")
     print 'Roation: ', i
-    parser.feed(html_raw)
+    parser.parse_haiku(html_tree)
     parser.split_haiku()
 
-write_fives(fives)
-write_sevens(sevens)
+write_fives(parser.fives)
+write_sevens(parser.sevens)
 
-remove_duplicates('data/7s.txt')
 remove_duplicates('data/5s.txt')
+remove_duplicates('data/7s.txt')
